@@ -5,6 +5,7 @@ import tempfile
 from argparse import ArgumentParser
 from urllib.parse import quote
 from kbbi import KBBI
+from urbandictionary_top import udtop
 import requests
 import wikipedia
 from flask import Flask, request, abort
@@ -89,6 +90,9 @@ def handle_message(event):
 	
 	def split7(text):
 		return text.split('/wikilang ', 1)[-1]
+		
+	def split8(text):
+		return text.split('/urban ', 1)[-1]
 			
 	def wolframs(query):
 		wolfram_appid = ('83L4JP-TWUV8VV7J7')
@@ -174,6 +178,20 @@ def handle_message(event):
 				result += '\n'.join(entry.arti_contoh)
 			else:
 				result += str(entry)
+		return result
+		
+	def urban(keyword, ex=True):
+		
+		try:
+			entry = udtop(keyword)
+		except (TypeError, AttributeError, udtop.TermNotFound) :
+			result = "{} definition not found in urbandictionary.".format(keyword)
+		else:
+			result = "{} definition:\n".format(keyword)
+			if ex:
+				result += str(entry)
+			else:
+				result += entry.definition
 		return result
 	
 	if text == '/help':
@@ -270,6 +288,11 @@ def handle_message(event):
 		line_bot_api.reply_message(
 			event.reply_token,
 			TextSendMessage(trans(split5(text))))
+			
+	elif text[0:].lower().strip().startswith('/urban '):
+		line_bot_api.reply_message(
+			event.reply_token,
+			TextSendMessage(urban(split8(text))))
 	
 	elif text[0:].lower().strip().startswith('/wiki ') :
 		line_bot_api.reply_message(

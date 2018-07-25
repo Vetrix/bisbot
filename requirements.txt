@@ -4,3 +4,4 @@ kbbi
 argparse
 googletrans
 wikipedia
+urbandictionary_top
