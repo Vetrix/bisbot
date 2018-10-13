@@ -35,6 +35,18 @@ line_bot_api = LineBotApi('CzSF4tZw1pR4X9i8Y6s580+0p7ebCpqq9MpoA98z8zsAl1ObHL+/B
 handler = WebhookHandler('f69e514026a91f8ba1e5e3c7934eca35')
 
 
+static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
+
+# function for create tmp dir for download content
+def make_static_tmp_dir():
+	try:
+		os.makedirs(static_tmp_path)
+	except OSError as exc:
+		if exc.errno == errno.EEXIST and os.path.isdir(static_tmp_path):
+			pass
+		else:
+			raise
+
 @app.route("/callback", methods=['POST'])
 def callback():
 	# get X-Line-Signature header value
@@ -314,6 +326,52 @@ def handle_sticker_message(event):
 			sticker_id=event.message.sticker_id)
 	)
 
+# Other Message Type
+@handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
+def handle_content_message(event):
+	if isinstance(event.message, ImageMessage):
+		ext = 'jpg'
+	elif isinstance(event.message, VideoMessage):
+		ext = 'mp4'
+	elif isinstance(event.message, AudioMessage):
+		ext = 'm4a'
+	else:
+		return
+
+	message_content = line_bot_api.get_message_content(event.message.id)
+	with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix=ext + '-', delete=False) as tf:
+		for chunk in message_content.iter_content():
+			tf.write(chunk)
+		tempfile_path = tf.name
+
+	dist_path = tempfile_path + '.' + ext
+	dist_name = os.path.basename(dist_path)
+	os.rename(tempfile_path, dist_path)
+	
+	line_bot_api.reply_message(
+		event.reply_token, [
+			TextSendMessage(text='Save content.'),
+			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
+		])
+		
+@handler.add(MessageEvent, message=FileMessage)
+def handle_file_message(event):
+	message_content = line_bot_api.get_message_content(event.message.id)
+	with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix='file-', delete=False) as tf:
+		for chunk in message_content.iter_content():
+			tf.write(chunk)
+		tempfile_path = tf.name
+	
+	dist_path = tempfile_path + '-' + event.message.file_name
+	dist_name = os.path.basename(dist_path)
+	os.rename(tempfile_path, dist_path)
+	
+	line_bot_api.reply_message(
+		event.reply_token, [
+			TextSendMessage(text='Save file.'),
+			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
+		])	
+	
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
 	line_bot_api.reply_message(
@@ -331,5 +389,14 @@ def handle_join(event):
 		TextSendMessage(text='Barista is here... ' + event.source.type + ' apa ini?'))
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-app.run(host='0.0.0.0', port=port)
+    arg_parser = ArgumentParser(
+        usage='Usage: python ' + __file__ + ' [--port <port>] [--help]'
+    )
+    arg_parser.add_argument('-p', '--port', type=int, default=8000, help='port')
+    arg_parser.add_argument('-d', '--debug', default=False, help='debug')
+    options = arg_parser.parse_args()
+
+    # create tmp dir for download content
+    make_static_tmp_dir()
+
+    app.run(debug=options.debug, port=options.port)
