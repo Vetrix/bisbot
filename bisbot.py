@@ -405,7 +405,7 @@ def handle_message(event):
 							"/leave, /kbbi, /wolfram, /wolframs,\n"
 							"/trans, /wiki, /wikilang, /urban,\n"
 							"/ox, /tts, /stalkig, /photoig,\n"
-							"/videoig, /imdb, /pt, /fdetect,\n"))
+							"/videoig, /imdb, /pt, /fdetect"))
 	
 	elif text == '/kbbi':
 		line_bot_api.reply_message(
