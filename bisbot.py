@@ -82,29 +82,11 @@ def handle_message(event):
 		subject = line_bot_api.get_profile(event.source.user_id)
 		set_id = event.source.user_id
 		
-	def spilit1(text):
-		return text.split('/wolfram ', 1)[-1]
+	def split(text):
+		return text.split(' ', 1)[-1]		
 	
-	def spilit2(text):
-		return text.split('/kbbi ', 1)[-1]
-		
-	def split3(text):
-		return text.split('/echo ', 1)[-1]
-
-	def split4(text):
-		return text.split('/wolframs ', 1)[-1]
-		
-	def split5(text):
-		return text.split('/trans ', 1)[-1]
-	
-	def split6(text):
-		return text.split('/wiki ', 1)[-1]
-	
-	def split7(text):
-		return text.split('/wikilang ', 1)[-1]
-		
-	def split8(text):
-		return text.split('/urban ', 1)[-1]
+	def force_safe(text):
+		return text.replace('http','https',1)
 			
 	def wolframs(query):
 		wolfram_appid = ('83L4JP-TWUV8VV7J7')
@@ -205,13 +187,317 @@ def handle_message(event):
 			else:
 				result += entry.definition
 		return result
+		
+	def fdetect(url) :
+		http_url = 'https://api-us.faceplusplus.com/facepp/v3/detect'
+		key = "lM4feUDrJJYyKm8s4WvmxgWlVpZE0iNw"
+		secret = "Y5L_l2a87UAtKeFzL-FD8K3C5OwtAbfA"
+		attributes="age,gender,ethnicity,beauty"
+		
+		#add emotion later in atributes
+		
+		resp = requests.post(http_url,
+			data = { 
+					'api_key': key,
+					'api_secret': secret,
+					'image_url': url,
+					'return_attributes': attributes}
+		)
+
+		r = resp.json()
+	
+		if (len(r) == 3 ) :
+			return ("Face not detected")
+			
+		dict1 = r['faces']
+		if ((len(dict1) > 1) or (len(dict1) < 1)):
+			return ("Please send picture with one face only")
+		else:
+			dict2 = dict1[0]['attributes']['gender']['value']
+			dict3 = dict1[0]['attributes']['age']['value']
+			dict4 = dict1[0]['attributes']['beauty']
+			
+			if (dict2 == 'Male') :
+				dict4 = dict4['male_score']
+			else:
+				dict4 = dict4['female_score']
+			
+			dict5 = dict1[0]['attributes']['ethnicity']['value']
+			
+			#dict6 = dict1[0]['attributes']['emotion'] add emotion later
+			
+			return("Gender		: " + str(dict2) + "\n" +
+					"Age				: " + str(dict3) + "\n" +
+					"Beauty		: " + str(round(dict4, 2)) + "\n" +
+					"Ethnicity	: " + str(dict5))
+	
+	def pt(city) :
+		url = "https://time.siswadi.com/pray/?address={}"
+		r = requests.get(url.format(city))
+
+		data = r.json()
+		dict1 = data['data']
+		dict2 = data['location']
+		dict3 = data['time']
+		
+		return (str(dict2['address']) + " prayer time " + str(dict3['date']) + "\n"
+				"Fajr				: " + str(dict1['Fajr']) + "\n"
+				"Sunrise	: " + str(dict1['Sunrise']) + "\n"
+				"Dhuhr		: " + str(dict1['Dhuhr']) + "\n"
+				"Asr				: " + str(dict1['Asr']) + "\n"
+				"Maghrib	: " + str(dict1['Maghrib']) + "\n"
+				"Isha				: " + str(dict1['Isha']))
+	
+	def ig(username) :
+		url = "https://www.instagram.com/{}"
+		r = requests.get(url.format(username))
+		if r.status_code == 404:
+			return ("Unavailable")
+			
+		html = r.text
+		jsondata = html.split("window._sharedData = ")[1].split(";</script>")[0]
+
+		data = json.loads(jsondata)
+		dict1 = data['entry_data']['ProfilePage'][0]['graphql']['user']
+
+		return ("User : @"+ dict1['username'] + "\n" + "Name : " + dict1['full_name'] + "\n" + 
+				"Following : " + str(dict1['edge_follow']['count']) + "\n" +
+				"Followers : " + str(dict1['edge_followed_by']['count']) + "\n" +
+				"Bio : " + dict1['biography'])
+		
+	def igs(username) :
+		url = "https://www.instagram.com/{}"
+		r = requests.get(url.format(username))
+		html = r.text
+		jsondata = html.split("window._sharedData = ")[1].split(";</script>")[0]
+
+		data = json.loads(jsondata)
+		dict1 = data['entry_data']['ProfilePage'][0]['graphql']['user']
+
+		return (dict1['profile_pic_url_hd'])
+		
+	def picg(uri) :
+		url = uri
+		r = requests.get(url)
+		if r.status_code == 404:
+			return ("Unavailable")
+		
+		html = r.text
+		jsondata = html.split("""<script type="application/ld+json">""")[1].split("</script>")[0]
+
+		data = json.loads(jsondata)
+		dict1 = data['caption']
+		
+		data2 = html.split("""og:title" content=\"""")[1].split(":")[0]
+		return(data2 + " : \n" + dict1)
+		
+	def picgs(uri) :
+		url = uri
+		r = requests.get(url)
+		html = r.text
+
+		data = html.split("""og:image" content=\"""")[1].split("\"")[0]
+		return (data)
+	
+	def vigs(uri) :
+		url = uri
+		r = requests.get(url)
+		html = r.text
+
+		data = html.split("""og:video" content=\"""")[1].split("\"")[0]
+		return (data)	
+	
+	def tts(word):
+		la ='en'
+		ext = 'mp3'
+		
+		if word[0:].lower().strip().startswith('la='):
+			la = word.split(', ', 1)[0]
+			la = la.split('la=', 1)[-1]
+			word = word.split(', ', 1)[1]
+			
+		speech = gTTS(text=word, lang=la)
+		with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix='mp3-', delete=False) as tf:
+			speech.write_to_fp(tf)
+		tempfile_path = tf.name
+		
+		dist_path = tempfile_path + '.' + ext
+		dist_name = os.path.basename(dist_path)
+		os.rename(tempfile_path, dist_path)
+		
+		url = request.host_url + os.path.join('static', 'tmp', dist_name)
+		return force_safe(url)
+
+	def mreview(movie) :	
+		ia = IMDb()
+		movies = ia.search_movie(movie)
+		
+		ID = movies[0].movieID
+		data = ia.get_movie(ID)
+		
+		#data.infoset2keys (get all info)
+		
+		cast = ''
+		i = 0
+		while (i != 4) :
+			cast = cast + "\n" + str(data['cast'][i]) + " as " +  str(data['cast'][i].notes)
+			i += 1
+		
+		duration = str(data['runtimes']).split("'")[1]
+		
+		year = str(data['year'])
+		
+		plot = str(data['plot'][0].split("::")[0])
+		
+		rate = str(data['rating'])
+		
+		return ("Title						: " + str(movies[0]) + "\n"
+				"Rating				: " + rate + "\n"
+				"Duration			: " + duration + " minutes\n"
+				"Year						: " + year + "\n"
+				"Main Casts 	: " + cast + "\n"
+				"Plot : \n" + str(plot))
+				
+	def imdbpic(movie) :
+		ia = IMDb()
+		movies = ia.search_movie(movie)
+		
+		ID = movies[0].movieID
+		data = ia.get_movie(ID)
+		
+		return (str(data['cover url']))
+	
+	def ox(keyword):
+		oxdict_appid = ('7dff6c56')
+		oxdict_key = ('41b55bba54078e9fb9f587f1b978121f')
+		
+		word = quote(keyword)
+		url = ('https://od-api.oxforddictionaries.com:443/api/v1/entries/en/{}'.format(word))
+		req = requests.get(url, headers={'app_id': oxdict_appid, 'app_key': oxdict_key})
+		if "No entry available" in req.text:
+			return 'No entry available for "{}".'.format(word)
+
+		req = req.json()
+		result = ''
+		i = 0
+		for each_result in req['results']:
+			for each_lexEntry in each_result['lexicalEntries']:
+				for each_entry in each_lexEntry['entries']:
+					for each_sense in each_entry['senses']:
+						if 'crossReferenceMarkers' in each_sense:
+							search = 'crossReferenceMarkers'
+						else:
+							search = 'definitions'
+						for each_def in each_sense[search]:
+							i += 1
+							result += '\n{}. {}'.format(i, each_def)
+
+		if i == 1:
+			result = 'Definition of {}:\n'.format(keyword) + result[4:]
+		else:
+			result = 'Definitions of {}:'.format(keyword) + result
+		return result
 	
 	if text == '/help':
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage("Bison bisa diusir sekarang. \n"
-							"Sama ada command 'Stalk' \n"
-							"/wolfram {input} juga bisa"))
+			TextSendMessage("Full command bisbot pwrlvl9k : \n"
+							"/leave, /kbbi, /wolfram, /wolframs,\n"
+							"/trans, /wiki, /wikilang, /urban,\n"
+							"/ox, /tts, /stalkig, /photoig,\n"
+							"/videoig, /imdb, /pt, /fdetect,\n"))
+	
+	elif text == '/kbbi':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get meaning of a word from https://kbbi.kemdikbud.go.id/ \n"
+								"command /kbbi {word}"))
+	
+	elif text == '/urban':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get meaning of a word from https://www.urbandictionary.com/ \n"
+								"command /urban {word}"))
+	
+	elif text == '/ox':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get meaning of a word from https://www.oxforddictionaries.com/ \n"
+								"command /ox {word}"))
+								
+	elif text == '/imdb':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get movie review from https://www.imdb.com/ \n"
+								"command /imdb {movie}"))
+								
+	elif text == '/fdetect':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get face detection of photo url \n"
+								"command /fdetect {url}"))
+	
+	elif text == '/wolfram':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("use https://www.wolframalpha.com/ features, and give the result "
+								"in simple text \n"
+								"command /wolfram {input}"))
+				
+	elif text == '/wolframs':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("use https://www.wolframalpha.com/ features, and give the result "
+								"in image \n"
+								"command /wolframs {input}"))
+				
+	elif text == '/stalkig':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get simple description of instagram account and profile picture \n"
+								"command /stalkig {username}"))
+				
+	elif text == '/photoig':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get photo and description of instagram post \n"
+								"command /photoig {post link}"))
+				
+	elif text == '/videoig':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get video and description of instagram post \n"
+								"command /videoig {post link}"))
+				
+	elif text == '/trans':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get translation from https://translate.google.com/ \n"
+								"command /trans sc={language code}, to={language code}, {text}"))
+				
+	elif text == '/tts':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get audio file about how a word pronounced in a language \n"
+								"command /tts la={language code}, {text}"))
+	
+	elif text == '/wiki':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get https://www.wikipedia.org/ description of something \n"
+								"command /wiki {text}"))
+				
+	elif text == '/wikilang':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("change the language of wikipedia description \n"
+								"command /wikilang {language code}"))
+								
+	elif text == '/pt':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("get prayer time of your city \n"
+								"command /pt {city}"))
 	
 	elif text == 'Stalk':
 		if isinstance(event.source, SourceGroup):
@@ -247,7 +533,7 @@ def handle_message(event):
 			except LineBotApiError:
 				pass
 			
-	elif (text == 'Pergi lu Son') or (text== 'Enyah lu Son'):
+	elif text == '/leave':
 		if isinstance(event.source, SourceGroup):
 			line_bot_api.reply_message(
 				event.reply_token,
@@ -270,51 +556,100 @@ def handle_message(event):
 				event.reply_token,
 				TextSendMessage('command /wolfram {input}'))
 	
-	elif text=='/kickbison':
-		groupId = event.source.group_id
-		contactIds = U2119c3446cb497184bc5bf02feca296f
-		line_bot_api.kickoutFromGroup(0, groupId, contactIds)
+	elif text[0:].lower().strip().startswith('/ox '):
+		line_bot_api.reply_message(
+			event.reply_token,
+			TextSendMessage(ox(split(text))))
+			
+	elif text[0:].lower().strip().startswith('/pt ') :
+		line_bot_api.reply_message(
+			event.reply_token,
+			TextSendMessage(pt(split(text))))
+			
+	elif text[0:].lower().strip().startswith('/fdetect ') :
+		line_bot_api.reply_message(
+			event.reply_token,
+			TextSendMessage(fdetect(split(text))))
+			
+	elif text[0:].lower().strip().startswith('/tts ') :
+		line_bot_api.reply_message(
+				event.reply_token, [
+				TextSendMessage(tts(split(text))),
+				AudioSendMessage(original_content_url=tts(split(text)), duration=60000)
+				])
+	
+	elif text[0:].lower().strip().startswith('/videoig '):
+		line_bot_api.reply_message(
+			event.reply_token, [
+			TextSendMessage(picg(split(text))),
+			VideoSendMessage(original_content_url= vigs(split(text)),
+							preview_image_url= picgs(split(text)))
+			])
+	
+	elif text[0:].lower().strip().startswith('/photoig '):
+		line_bot_api.reply_message(
+			event.reply_token, [
+			TextSendMessage(picg(split(text))),
+			ImageSendMessage(original_content_url= picgs(split(text)),
+							preview_image_url= picgs(split(text)))
+			])
+	
+	elif text[0:].lower().strip().startswith('/stalkig '):
+		line_bot_api.reply_message(
+			event.reply_token, [
+			TextSendMessage(ig(split(text))),
+			ImageSendMessage(original_content_url= igs(split(text)),
+							preview_image_url= igs(split(text)))
+			])
+			
+	elif text[0:].lower().strip().startswith('/imdb '):
+		line_bot_api.reply_message(
+			event.reply_token, [
+			TextSendMessage(mreview(split(text))),
+			ImageSendMessage(original_content_url= imdbpic(split(text)),
+							preview_image_url= imdbpic(split(text)))
+			])
 				
 	elif text[0:].lower().strip().startswith('/wolfram '):
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(wolfram(spilit1(text))))
+			TextSendMessage(wolfram(split(text))))
 			
 	elif text[0:].lower().strip().startswith('/kbbi '):
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(find_kbbi(spilit2(text))))
+			TextSendMessage(find_kbbi(split(text))))
 			
 	elif text[0:].lower().strip().startswith('/wolframs '):
 		line_bot_api.reply_message(
 			event.reply_token,
-			ImageSendMessage(original_content_url= wolframs(split4(text)),
-								preview_image_url= wolframs(split4(text))))
+			ImageSendMessage(original_content_url= wolframs(split(text)),
+								preview_image_url= wolframs(split(text))))
 								
 	elif text[0:].lower().strip().startswith('/echo ') :
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(split3(text)))
+			TextSendMessage(split(text)))
 			
 	elif text[0:].lower().strip().startswith('/trans ') :
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(trans(split5(text))))
+			TextSendMessage(trans(split(text))))
 			
 	elif text[0:].lower().strip().startswith('/urban '):
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(urban(split8(text))))
+			TextSendMessage(urban(split(text))))
 	
 	elif text[0:].lower().strip().startswith('/wiki ') :
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(wiki_get(split6(text), set_id=set_id)))
+			TextSendMessage(wiki_get(split(text), set_id=set_id)))
 			
 	elif text[0:].lower().strip().startswith('/wikilang ') :
 		line_bot_api.reply_message(
 			event.reply_token,
-			TextSendMessage(wiki_lang(split7(text), set_id=set_id)))
+			TextSendMessage(wiki_lang(split(text), set_id=set_id)))
 	
 			
 @handler.add(MessageEvent, message=StickerMessage)
@@ -326,7 +661,7 @@ def handle_sticker_message(event):
 			sticker_id=event.message.sticker_id)
 	)
 
-"""# Other Message Type
+# Other Message Type
 @handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
 def handle_content_message(event):
 	if isinstance(event.message, ImageMessage):
@@ -371,7 +706,7 @@ def handle_file_message(event):
 			TextSendMessage(text='Save file.'),
 			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
 		])	
-"""
+
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
 	line_bot_api.reply_message(
