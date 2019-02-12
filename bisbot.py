@@ -658,7 +658,7 @@ def handle_sticker_message(event):
 			package_id=event.message.package_id,
 			sticker_id=event.message.sticker_id)
 	)
-
+"""
 # Other Message Type
 @handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
 def handle_content_message(event):
@@ -704,7 +704,7 @@ def handle_file_message(event):
 			TextSendMessage(text='Save file.'),
 			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
 		])	
-
+"""
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
 	line_bot_api.reply_message(
