@@ -2,33 +2,31 @@ import errno
 import os
 import sys
 import tempfile
+from gtts import gTTS
+from imdb import IMDb
 from argparse import ArgumentParser
 from urllib.parse import quote
 from kbbi import KBBI
 from urbandictionary_top import udtop
+from googletrans import Translator
 import requests
 import wikipedia
+import json
+
 from flask import Flask, request, abort
-from googletrans import Translator
+
 from linebot import (
 	LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-	InvalidSignatureError
+	InvalidSignatureError, LineBotApiError
 )
-from linebot.models import (
-	MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, SourceGroup, SourceRoom,
-	TemplateSendMessage, ConfirmTemplate, MessageTemplateAction,
-	ButtonsTemplate, ImageCarouselTemplate, ImageCarouselColumn, URITemplateAction,
-	PostbackTemplateAction, DatetimePickerTemplateAction,
-	CarouselTemplate, CarouselColumn, PostbackEvent,
-	StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
-	ImageMessage, VideoMessage, AudioMessage, FileMessage,
-	UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent
-)
+from linebot.models import *
 
-wiki_settings = {}
 translator = Translator()
+wiki_settings = {}
+
+
 app = Flask(__name__)
 
 line_bot_api = LineBotApi('CzSF4tZw1pR4X9i8Y6s580+0p7ebCpqq9MpoA98z8zsAl1ObHL+/Bmsk0t6BRk2+W9bxrNQMsUDsiEFcwr3nF7lVx644o8HwAXfr7mMfVhyXPC88CoNZKZxETv+WLa0L/gZoHA3YMc9KFINKeeoP+gdB04t89/1O/w1cDnyilFU=')
