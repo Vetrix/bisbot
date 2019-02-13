@@ -2,6 +2,7 @@ import errno
 import os
 import sys
 import tempfile
+import random
 from gtts import gTTS
 from imdb import IMDb
 from argparse import ArgumentParser
@@ -26,6 +27,8 @@ from linebot.models import *
 translator = Translator()
 wiki_settings = {}
 
+ytlist = ["https://youtu.be/nBteO-bU78Y", "https://youtu.be/Xrcvig0f92U","https://youtu.be/M276QojLU-s",
+			"https://youtu.be/I1qo9ZxoF04", "https://youtu.be/KF322xXDffg", "https://youtu.be/a1vNFJMpIUo"]
 
 app = Flask(__name__)
 
@@ -404,6 +407,11 @@ def handle_message(event):
 							"/trans, /wiki, /wikilang, /urban,\n"
 							"/ox, /tts, /stalkig, /photoig,\n"
 							"/videoig, /imdb, /pt, /fdetect"))
+	
+	elif text == '/music':
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage(random.choice(ytlist))
 	
 	elif text == '/kbbi':
 		line_bot_api.reply_message(
