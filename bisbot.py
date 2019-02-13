@@ -411,7 +411,7 @@ def handle_message(event):
 	elif text == '/music':
 		line_bot_api.reply_message(
 				event.reply_token,
-				TextSendMessage(random.choice(ytlist))
+				TextSendMessage(random.choice(ytlist)))
 	
 	elif text == '/kbbi':
 		line_bot_api.reply_message(
