@@ -289,8 +289,10 @@ def handle_message(event):
 		data = json.loads(jsondata)
 		dict1 = data['caption']
 		
+		dict1 = dict1[:1900]
+		
 		data2 = html.split("""og:title" content=\"""")[1].split(":")[0]
-		return(data2 + " : \n" + dict1)
+		return(data2 + " : \n" + dict1 + "\n...")
 		
 	def picgs(uri) :
 		url = uri
