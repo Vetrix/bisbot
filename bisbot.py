@@ -26,6 +26,7 @@ from linebot.models import *
 
 translator = Translator()
 wiki_settings = {}
+save_file = {}
 
 ytlist = ["https://youtu.be/nBteO-bU78Y", "https://youtu.be/Xrcvig0f92U","https://youtu.be/M276QojLU-s",
 			"https://youtu.be/I1qo9ZxoF04", "https://youtu.be/KF322xXDffg", "https://youtu.be/a1vNFJMpIUo"]
@@ -407,8 +408,20 @@ def handle_message(event):
 			TextSendMessage("Full command bisbot pwrlvl9k : \n"
 							"/leave, /kbbi, /wolfram, /wolframs,\n"
 							"/trans, /wiki, /wikilang, /urban,\n"
-							"/ox, /tts, /stalkig, /photoig,\n"
-							"/videoig, /imdb, /pt, /fdetect"))
+							"/on, /off, /tts, /stalkig, /photoig,\n"
+							"/videoig, /imdb, /pt, /fdetect, /ox"))
+	
+	elif text == '/on':
+		save_file[set_id] = True
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("Save file on"))
+				
+	elif text == '/off':
+		save_file[set_id] = False
+		line_bot_api.reply_message(
+				event.reply_token,
+				TextSendMessage("Save file off"))
 	
 	elif text == '/music':
 		line_bot_api.reply_message(
@@ -668,53 +681,85 @@ def handle_sticker_message(event):
 			package_id=event.message.package_id,
 			sticker_id=event.message.sticker_id)
 	)
-"""
+
 # Other Message Type
 @handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
 def handle_content_message(event):
-	if isinstance(event.message, ImageMessage):
-		ext = 'jpg'
-	elif isinstance(event.message, VideoMessage):
-		ext = 'mp4'
-	elif isinstance(event.message, AudioMessage):
-		ext = 'm4a'
+	if isinstance(event.source, SourceGroup):
+		subject = line_bot_api.get_group_member_profile(event.source.group_id,
+														event.source.user_id)
+		set_id = event.source.group_id
+	elif isinstance(event.source, SourceRoom):
+		subject = line_bot_api.get_room_member_profile(event.source.room_id,
+                                                   event.source.user_id)
+		set_id = event.source.room_id
 	else:
-		return
-
-	message_content = line_bot_api.get_message_content(event.message.id)
-	with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix=ext + '-', delete=False) as tf:
-		for chunk in message_content.iter_content():
-			tf.write(chunk)
-		tempfile_path = tf.name
-
-	dist_path = tempfile_path + '.' + ext
-	dist_name = os.path.basename(dist_path)
-	os.rename(tempfile_path, dist_path)
-	
-	line_bot_api.reply_message(
-		event.reply_token, [
-			TextSendMessage(text='Save content.'),
-			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
-		])
+		subject = line_bot_api.get_profile(event.source.user_id)
+		set_id = event.source.user_id
 		
+	try :
+		if save_file[set_id] :
+			if isinstance(event.message, ImageMessage):
+				ext = 'jpg'
+			elif isinstance(event.message, VideoMessage):
+				ext = 'mp4'
+			elif isinstance(event.message, AudioMessage):
+				ext = 'm4a'
+			else:
+				return
+
+			message_content = line_bot_api.get_message_content(event.message.id)
+			with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix=ext + '-', delete=False) as tf:
+				for chunk in message_content.iter_content():
+					tf.write(chunk)
+				tempfile_path = tf.name
+
+			dist_path = tempfile_path + '.' + ext
+			dist_name = os.path.basename(dist_path)
+			os.rename(tempfile_path, dist_path)
+
+			line_bot_api.reply_message(
+				event.reply_token, [
+					TextSendMessage(text='Save content.'),
+					TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
+				])
+	except KeyError:
+		save_file[set_id] = False
+	
 @handler.add(MessageEvent, message=FileMessage)
 def handle_file_message(event):
-	message_content = line_bot_api.get_message_content(event.message.id)
-	with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix='file-', delete=False) as tf:
-		for chunk in message_content.iter_content():
-			tf.write(chunk)
-		tempfile_path = tf.name
+	if isinstance(event.source, SourceGroup):
+		subject = line_bot_api.get_group_member_profile(event.source.group_id,
+														event.source.user_id)
+		set_id = event.source.group_id
+	elif isinstance(event.source, SourceRoom):
+		subject = line_bot_api.get_room_member_profile(event.source.room_id,
+                                                   event.source.user_id)
+		set_id = event.source.room_id
+	else:
+		subject = line_bot_api.get_profile(event.source.user_id)
+		set_id = event.source.user_id
 	
-	dist_path = tempfile_path + '-' + event.message.file_name
-	dist_name = os.path.basename(dist_path)
-	os.rename(tempfile_path, dist_path)
-	
-	line_bot_api.reply_message(
-		event.reply_token, [
-			TextSendMessage(text='Save file.'),
-			TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
-		])	
-"""
+	try :
+		if save_file[set_id] :
+			message_content = line_bot_api.get_message_content(event.message.id)
+			with tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix='file-', delete=False) as tf:
+				for chunk in message_content.iter_content():
+					tf.write(chunk)
+				tempfile_path = tf.name
+			
+			dist_path = tempfile_path + '-' + event.message.file_name
+			dist_name = os.path.basename(dist_path)
+			os.rename(tempfile_path, dist_path)
+			
+			line_bot_api.reply_message(
+				event.reply_token, [
+					TextSendMessage(text='Save file.'),
+					TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
+				])
+	except KeyError:
+		save_file[set_id] = False
+
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
 	line_bot_api.reply_message(
